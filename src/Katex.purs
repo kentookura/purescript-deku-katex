@@ -11,6 +11,9 @@ module Katex
   , defaultOptions
   , toggleDisplay
   , render
+  , inline
+  , display
+  , parse
   )
   where
 
@@ -18,8 +21,12 @@ import Prelude
 import Effect (Effect)
 import Data.Tuple (Tuple)
 import Data.Tuple.Nested ((/\))
+import Foreign
 import Web.DOM (Element)
 import Data.Map (Map, empty)
+import Deku.Core (Nut)
+import Deku.DOM as D
+import Deku.Attribute ((!:=))
 
 data Operator
   = Sum
@@ -243,5 +250,35 @@ toggleDisplay ops = case ops.displayMode of
 
 data Macros = Object
 
-foreign import render :: String -> Element -> Settings -> Effect Unit
+render
+  :: { config :: Settings
+     , katex :: String
+     }
+  -> Nut
+render { config, katex } =
+      D.span
+        [ D.Self !:= \elt -> do
+            renderImpl katex elt config
+        ]
+        []
+
+display :: String -> Nut
+display s =
+  D.span
+    [ D.Self !:= \elt -> do
+        renderImpl s elt (defaultOptions {displayMode = true})
+    ]
+    []
+
+inline :: String -> Nut
+inline s =
+  D.span
+    [ D.Self !:= \elt -> do
+        renderImpl s elt (defaultOptions {displayMode = false})
+    ]
+    []
+
+
+foreign import renderImpl :: String -> Element -> Settings -> Effect Unit
 foreign import _renderToStringNullable :: String -> { displayMode :: Boolean } -> Effect Unit
+foreign import parse :: String -> String

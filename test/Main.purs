@@ -13,56 +13,58 @@ import Deku.Do as Deku
 import Deku.DOM as D
 import Deku.Toplevel (runInBody)
 import Katex as Katex
-import Katex (Operator(..), Accent(..), Expr(..), Delim(..), Delimiter(..), Side(..))
+import Katex (inline, render, Operator(..), Accent(..), Expr(..), Delim(..), Delimiter(..), Side(..), parse)
 import FRP.Event (Event)
+
+data Writer s x = Writer s x
 
 main :: Effect Unit
 main = runInBody
   Deku.do
-    D.span
-      [ D.Self !:= \e -> do
-          Katex.render "c = \\pm\\sqrt{a^2 + b^2}" e Katex.defaultOptions]
-      [operators, accents, delimiters]
-
-render
-  :: { config :: Katex.Settings
-     , katex :: String
-     }
-  -> Nut
-render { config, katex } =
-      D.span
-        [ D.Self !:= \elt -> do
-            Katex.render katex elt config
-        ]
-        []
+    D.div_
+      [ D.span
+          []
+          [ text_ $ parse "\\pm\\sqrt{a^2 + b^2}", inline "c = \\pm\\sqrt{a^2 + b^2}", operators, accents, delimiters ]
+      , D.pre_
+          [ D.code_
+              [ text_
+                  """instance (Monoid s) => Monad (Tuple) where
+  return x = (mempty, x)
+  r =<< s /\ x = (t <> s) /\ y
+    where t /\ y = f x
+"""
+              ]
+          ]
+      ]
 
 operators :: Nut
-operators = 
+operators =
   D.div_ $
-    [ Sum 
-    , Product 
+    [ Sum
+    , Product
     , Integral
-    , IInt 
+    , IInt
     , IIInt
-    , OInt 
+    , OInt
     , OIInt
     , OIIInt
     , Bigotimes
-    , Bigoplus 
-    , Bigodot 
+    , Bigoplus
+    , Bigodot
     , Biguplus
-    , Bigvee 
+    , Bigvee
     , Bigwedge
     , Bigcap
     , Bigcup
-    , Bigsqcup 
-    ] # 
-    map (\op -> Deku.do
-      render {katex: (show op), config: Katex.defaultOptions}
-    )
+    , Bigsqcup
+    ] #
+      map
+        ( \op -> Deku.do
+            render { katex: (show op), config: Katex.defaultOptions }
+        )
 
 accents :: Nut
-accents = 
+accents =
   D.div_ $
     [ Acc Prime (Str "A")
     , Acc DoublePrime (Str "A")
@@ -95,14 +97,14 @@ accents =
     , Acc Overlinesegment (Str "A")
     , Acc Underlinesegment (Str "A")
     , Acc Underbar (Str "A")
-    ] # 
-    map (\expr -> Deku.do
-      render {katex: (show expr), config: Katex.defaultOptions}
-    )
-
+    ] #
+      map
+        ( \expr -> Deku.do
+            render { katex: (show expr), config: Katex.defaultOptions }
+        )
 
 delimiters :: Nut
-delimiters = 
+delimiters =
   D.div_ $
     [ Paren
     , Ceil
@@ -121,10 +123,11 @@ delimiters =
     , Bracket
     , BBrace
     ] # (map \delim -> (Delimiter L delim /\ Delimiter R delim))
-      # map (\(r /\ l) -> 
-      Deku.do
-        D.div_ 
-          [ render {katex: (show r), config: Katex.defaultOptions}
-          , render {katex: (show l), config: Katex.defaultOptions}
-          ]
-    )
+      # map
+          ( \(r /\ l) ->
+              Deku.do
+                D.div_
+                  [ render { katex: (show r), config: Katex.defaultOptions }
+                  , render { katex: (show l), config: Katex.defaultOptions }
+                  ]
+          )
